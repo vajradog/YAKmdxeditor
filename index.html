@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDX Editor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 40px);
+    }
+    
+    header {
+      background-color: #444444;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .tabs {
+      display: flex;
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .tab-button {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      color: #64748b;
+      transition: all 0.2s;
+    }
+    
+    .tab-button:hover {
+      color: #3b82f6;
+    }
+    
+    .tab-button.active {
+      border-bottom-color: #444444;
+      color: #444444;
+    }
+    
+    .toolbar {
+      background-color: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    
+    .toolbar button {
+      background-color: white;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 6px 8px;
+      min-width: 32px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .toolbar button:hover {
+      background-color: #f8fafc;
+      border-color: #94a3b8;
+    }
+    
+    .toolbar button.active {
+      background-color: #dbeafe;
+      border-color: #3b82f6;
+    }
+    
+    .content-area {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .panel {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+    
+    .panel.active {
+      display: block;
+    }
+    
+    .editor-header {
+      padding: 10px;
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+    }
+    
+    #wysiwyg-editor {
+      width: 100%;
+      height: calc(100% - 41px);
+      overflow-y: auto;
+      padding: 20px;
+      border: none;
+      outline: none;
+    }
+    
+    .mdx-header {
+      padding: 10px;
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: flex-end;
+    }
+    
+    #mdx-output {
+      width: 100%;
+      height: calc(100% - 50px);
+      padding: 20px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+      background-color: white;
+      border: none;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+    }
+    
+    .button-primary {
+      background-color: #444444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .button-primary:hover {
+      background-color: #333333;
+    }
+    
+    .button-secondary {
+      background-color: #64748b;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .button-secondary:hover {
+      background-color: #475569;
+    }
+    
+    /* WYSIWYG Editor Styles */
+    #wysiwyg-editor h1 {
+      font-size: 2em;
+      margin-bottom: 0.5em;
+    }
+    
+    #wysiwyg-editor h2 {
+      font-size: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    
+    #wysiwyg-editor h3 {
+      font-size: 1.25em;
+      margin-bottom: 0.5em;
+    }
+    
+    #wysiwyg-editor p {
+      margin-bottom: 1em;
+    }
+    
+    #wysiwyg-editor ul, #wysiwyg-editor ol {
+      margin-left: 2em;
+      margin-bottom: 1em;
+    }
+    
+    #wysiwyg-editor blockquote {
+      border-left: 3px solid #e2e8f0;
+      padding-left: 1em;
+      margin: 1em 0;
+      color: #64748b;
+    }
+    
+    #wysiwyg-editor code {
+      font-family: monospace;
+      background-color: #f1f5f9;
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+    }
+    
+    #wysiwyg-editor img {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    .jsx-component {
+      background-color: #fef3c7;
+      padding: 8px;
+      margin: 8px 0;
+      border-left: 3px solid #d97706;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    
+    .hidden {
+      position: absolute;
+      left: -9999px;
+    }
+    
+    /* Print Styles */
+    @media print {
+      body, html {
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+      
+      .container {
+        box-shadow: none;
+        height: auto;
+      }
+      
+      header, .tabs, .toolbar, .mdx-header, #mdx-panel {
+        display: none !important;
+      }
+      
+      .content-area {
+        overflow: visible;
+        position: static;
+      }
+      
+      #editor-panel {
+        display: block !important;
+        position: static;
+      }
+      
+      #wysiwyg-editor {
+        padding: 0;
+        overflow: visible;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Yak MDX Editor by @vajradog</h1>
+    </header>
+    
+    <div class="tabs">
+      <button id="editor-tab" class="tab-button active">Editor</button>
+      <button id="mdx-tab" class="tab-button">MDX Output</button>
+    </div>
+    
+    <div class="toolbar">
+      <button data-command="formatBlock" data-value="h1" title="Heading 1">H1</button>
+      <button data-command="formatBlock" data-value="h2" title="Heading 2">H2</button>
+      <button data-command="formatBlock" data-value="h3" title="Heading 3">H3</button>
+      <button data-command="formatBlock" data-value="p" title="Paragraph">P</button>
+      <button data-command="bold" title="Bold"><strong>B</strong></button>
+      <button data-command="italic" title="Italic"><em>I</em></button>
+      <button data-command="strikethrough" title="Strikethrough"><span style="text-decoration: line-through;">S</span></button>
+      <button data-command="insertOrderedList" title="Numbered List">1.</button>
+      <button data-command="insertUnorderedList" title="Bullet List">•</button>
+      <button data-command="createLink" title="Insert Link">🔗</button>
+      <button data-command="formatBlock" data-value="blockquote" title="Blockquote">❝</button>
+      <button data-command="formatBlock" data-value="pre" title="Code Block">{ }</button>
+      <button data-command="insertHTML" data-value="<code></code>" title="Inline Code">`</button>
+      <button data-command="insertHorizontalRule" title="Horizontal Rule">―</button>
+      <button data-command="insertTask" title="Task List">☑</button>
+      <button data-command="formatBlock" data-value="<details><summary>Summary</summary>Content</details>" title="Expandable Section">▼</button>
+      <button data-command="insertTable" title="Insert Table">⊞</button>
+      <button data-command="insertImage" title="Insert Image">🖼️</button>
+      <button id="insert-jsx-btn" title="Insert JSX Component">JSX</button>
+    </div>
+    
+    <div id="content-area" class="content-area">
+      <div id="editor-panel" class="panel active">
+        <div class="editor-header">
+          <span>Rich Text Editor</span>
+          <button id="print-btn" class="button-secondary" title="Print Content">🖨️ Print</button>
+        </div>
+        <div id="wysiwyg-editor" contenteditable="true"></div>
+      </div>
+      
+      <div id="mdx-panel" class="panel">
+        <div class="mdx-header">
+          <button id="copy-mdx-btn" class="button-primary">Copy MDX</button>
+        </div>
+        <textarea id="mdx-output" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Editor elements
+      const editor = document.getElementById('wysiwyg-editor');
+      const mdxOutput = document.getElementById('mdx-output');
+      const toolbarButtons = document.querySelectorAll('.toolbar button');
+      const editorTab = document.getElementById('editor-tab');
+      const mdxTab = document.getElementById('mdx-tab');
+      const editorPanel = document.getElementById('editor-panel');
+      const mdxPanel = document.getElementById('mdx-panel');
+      const printBtn = document.getElementById('print-btn');
+      const copyMdxBtn = document.getElementById('copy-mdx-btn');
+      const insertJsxBtn = document.getElementById('insert-jsx-btn');
+      
+      // Tab switching
+      editorTab.addEventListener('click', () => {
+        editorTab.classList.add('active');
+        mdxTab.classList.remove('active');
+        editorPanel.classList.add('active');
+        mdxPanel.classList.remove('active');
+      });
+      
+      mdxTab.addEventListener('click', () => {
+        mdxTab.classList.add('active');
+        editorTab.classList.remove('active');
+        mdxPanel.classList.add('active');
+        editorPanel.classList.remove('active');
+        updateMdxOutput(); // Ensure MDX is up to date
+      });
+      
+      // Initial content
+      editor.innerHTML = `
+        <h1>Welcome to Yak MDX Editor</h1>
+        <p>The Yak MDX Editor is a powerful, browser-based tool for creating and editing MDX content with a familiar rich text interface. Created by @vajradog, this editor lets you focus on your content while automatically handling the MDX formatting.</p>
+
+        <h2>Key Features</h2>
+        <ul>
+          <li><strong>Rich Text Formatting</strong> - Format your content using the toolbar buttons</li>
+          <li><strong>Real-time MDX Conversion</strong> - See your MDX code instantly in the output tab</li>
+          <li><strong>JSX Component Support</strong> - Easily insert and edit React components</li>
+          <li><strong>Table Support</strong> - Create and format tables with a simple interface</li>
+          <li><strong>Image Embedding</strong> - Include images with proper MDX formatting</li>
+          <li><strong>Print Functionality</strong> - Print your formatted content with one click</li>
+          <li><strong>No Dependencies</strong> - Works entirely in the browser with no external requirements</li>
+        </ul>
+
+        <h2>How to Use</h2>
+        <p>Use the toolbar at the top to format your text. Available formatting options include:</p>
+
+        <table style="border-collapse: collapse; width: 100%;">
+          <thead>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: left;"><strong>Button</strong></td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: left;"><strong>Function</strong></td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: left;"><strong>MDX Output</strong></td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">H1, H2, H3</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Heading levels</td>
+              <td style="border: 1px solid #ddd; padding: 8px;"># Heading, ## Heading, etc.</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">B, I, S</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Bold, Italic, Strikethrough</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">**bold**, *italic*, ~~strikethrough~~</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">1., •</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Ordered and unordered lists</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">1. item, - item</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">🔗</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Insert link</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">[text](url)</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">❝</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Blockquote</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">> quoted text</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">{ }</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Code block</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">\`\`\`code\`\`\`</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">\`</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Inline code</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">\`code\`</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">―</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Horizontal rule</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">---</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">☑</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Task list</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">- [ ] Task</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">▼</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Expandable section</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">&lt;details&gt;&lt;summary&gt;...&lt;/summary&gt;...&lt;/details&gt;</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">⊞</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Insert table</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">| Header | Header |\n| --- | --- |</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">🖼️</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Insert image</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">![alt text](./path/to/image.png)</td>
+            </tr>
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">JSX</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">Insert JSX component</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">&lt;Component prop="value" /&gt;</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>JSX Components</h3>
+        <p>Click the JSX button to insert React components into your MDX:</p>
+        <div class="jsx-component">&lt;Button 
+  onClick={() => alert("Hello!")}
+  variant="primary"
+&gt;
+  Click Me
+&lt;/Button&gt;</div>
+
+        <h3>Exporting Your Content</h3>
+        <p>Click the "MDX Output" tab to view the MDX code, then use the "Copy MDX" button to copy it to your clipboard. You can also print your formatted content using the Print button in the editor.</p>
+      `;
+      
+      // Update MDX output on load
+      updateMdxOutput();
+      
+      // Add event listeners to toolbar buttons
+      toolbarButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const command = button.dataset.command;
+          const value = button.dataset.value || null;
+          
+          switch(command) {
+            case 'createLink':
+              const url = prompt('Enter the link URL:', 'https://');
+              if (url) {
+                const selection = window.getSelection();
+                if (selection.toString().trim() === '') {
+                  const linkText = prompt('Enter link text:', 'Link text');
+                  if (linkText) {
+                    document.execCommand('insertHTML', false, `<a href="${url}">${linkText}</a>`);
+                  }
+                } else {
+                  document.execCommand(command, false, url);
+                }
+              }
+              break;
+              
+            case 'insertHTML':
+              // For inline code and other HTML insertions
+              const selection = window.getSelection();
+              if (selection.toString()) {
+                // If there's selected text, wrap it in code tags
+                document.execCommand('insertHTML', false, `<code>${selection.toString()}</code>`);
+              } else {
+                document.execCommand('insertHTML', false, '<code>code</code>');
+              }
+              break;
+              
+            case 'strikethrough':
+              document.execCommand('insertHTML', false, `<s>${window.getSelection().toString() || 'strikethrough text'}</s>`);
+              break;
+              
+            case 'insertTask':
+              document.execCommand('insertHTML', false, '<div>- [ ] Task item</div>');
+              break;
+              
+            case 'insertTable':
+              const rows = prompt('Number of rows:', '3');
+              const cols = prompt('Number of columns:', '3');
+              
+              if (rows && cols) {
+                let tableHTML = '<table style="border-collapse: collapse; width: 100%;">';
+                
+                // Header row
+                tableHTML += '<thead><tr>';
+                for (let i = 0; i < cols; i++) {
+                  tableHTML += '<td style="border: 1px solid #ddd; padding: 8px; text-align: left;">Header ' + (i+1) + '</td>';
+                }
+                tableHTML += '</tr></thead><tbody>';
+                
+                // Data rows
+                for (let i = 0; i < rows - 1; i++) {
+                  tableHTML += '<tr>';
+                  for (let j = 0; j < cols; j++) {
+                    tableHTML += '<td style="border: 1px solid #ddd; padding: 8px;">Cell ' + (i+1) + '-' + (j+1) + '</td>';
+                  }
+                  tableHTML += '</tr>';
+                }
+                
+                tableHTML += '</tbody></table><p></p>';
+                document.execCommand('insertHTML', false, tableHTML);
+              }
+              break;
+              
+            case 'insertHorizontalRule':
+              document.execCommand('insertHTML', false, '<hr>');
+              break;
+              
+            case 'insertImage':
+              // Check if the image file exists first by creating a test image
+              const img = new Image();
+              img.onload = function() {
+                // Image exists, insert it with width control
+                document.execCommand('insertHTML', false, '<img src="./demo.png" alt="Replace description and path for image" style="max-width: 300px; height: auto;">');
+              };
+              img.onerror = function() {
+                // Image doesn't exist, alert user
+                alert('Error: demo.png not found. Please make sure the image is in the same directory as this HTML file.');
+              };
+              img.src = 'demo.png';
+              break;
+              
+            case 'formatBlock':
+              if (value && value.startsWith('<details>')) {
+                // Handle expandable section
+                document.execCommand('insertHTML', false, 
+                  '<details><summary>Summary</summary><div>Content goes here</div></details>');
+              } else {
+                document.execCommand(command, false, value);
+              }
+              break;
+              
+            default:
+              document.execCommand(command, false, value);
+              break;
+          }
+          
+          updateMdxOutput();
+          editor.focus();
+        });
+      });
+      
+              // Print button handler
+      printBtn.addEventListener('click', () => {
+        // Create a hidden iframe to hold print content
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'absolute';
+        printFrame.style.left = '-9999px';
+        document.body.appendChild(printFrame);
+        
+        // Write editor content to the iframe with appropriate styles
+        const printDoc = printFrame.contentDocument || printFrame.contentWindow.document;
+        printDoc.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>MDX Editor Content</title>
+            <style>
+              /* Reset all margins and padding */
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+              
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.2;
+                color: #000;
+                padding: 0.5cm;
+                font-size: 9pt;
+                max-width: 100%;
+              }
+              
+              h1 { 
+                font-size: 13pt; 
+                margin-bottom: 4pt; 
+                margin-top: 8pt;
+              }
+              
+              h2 { 
+                font-size: 11pt; 
+                margin-bottom: 4pt; 
+                margin-top: 8pt;
+              }
+              
+              h3 { 
+                font-size: 10pt; 
+                margin-bottom: 3pt; 
+                margin-top: 6pt;
+              }
+              
+              p { 
+                margin-bottom: 4pt;
+                font-size: 9pt; 
+              }
+              
+              ul, ol { 
+                margin-left: 12pt; 
+                margin-bottom: 4pt; 
+              }
+              
+              li { 
+                margin-bottom: 1pt; 
+                font-size: 9pt;
+              }
+              
+              blockquote {
+                border-left: 1px solid #999;
+                padding-left: 5pt;
+                margin: 4pt 0;
+                color: #444;
+              }
+              
+              code {
+                font-family: monospace;
+                background-color: #f5f5f5;
+                padding: 0 2pt;
+                font-size: 8pt;
+              }
+              
+              pre {
+                background-color: #f5f5f5;
+                padding: 3pt;
+                margin: 4pt 0;
+                font-size: 8pt;
+                white-space: pre-wrap;
+              }
+              
+              img { 
+                max-width: 180px; 
+                height: auto; 
+                margin: 4pt 0;
+              }
+              
+              table {
+                border-collapse: collapse;
+                width: 100%;
+                margin: 4pt 0;
+                font-size: 8pt;
+              }
+              
+              td, th {
+                border: 0.5px solid #ddd;
+                padding: 2pt;
+                text-align: left;
+              }
+              
+              .jsx-component {
+                background-color: #fff8e6;
+                padding: 3pt;
+                margin: 4pt 0;
+                border-left: 1px solid #d4a72c;
+                font-family: monospace;
+                white-space: pre-wrap;
+                font-size: 8pt;
+              }
+              
+              @media print {
+                @page {
+                  margin: 0.5cm;
+                  size: auto;
+                }
+                
+                body {
+                  padding: 0;
+                }
+                
+                h1, h2, h3 {
+                  page-break-after: avoid;
+                }
+                
+                img, table {
+                  page-break-inside: avoid;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${editor.innerHTML}
+          </body>
+          </html>
+        `);
+        printDoc.close();
+        
+        // Wait for styles to load then print
+        setTimeout(() => {
+          printFrame.contentWindow.focus();
+          printFrame.contentWindow.print();
+          
+          // Remove the frame after printing (or after a timeout)
+          setTimeout(() => {
+            document.body.removeChild(printFrame);
+          }, 1000);
+        }, 500);
+      });
+      
+      // JSX button handler
+      insertJsxBtn.addEventListener('click', () => {
+        const jsx = prompt('Enter JSX component:', '<Button>\n  Click Me\n</Button>');
+        if (jsx) {
+          const jsxElement = document.createElement('div');
+          jsxElement.className = 'jsx-component';
+          jsxElement.textContent = jsx;
+          
+          // Insert at cursor position or at the end
+          insertAtCursor(jsxElement);
+          updateMdxOutput();
+        }
+      });
+      
+      // Insert element at cursor position
+      function insertAtCursor(element) {
+        const selection = window.getSelection();
+        if (selection.rangeCount) {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(element);
+          
+          // Move cursor after the inserted element
+          range.setStartAfter(element);
+          range.setEndAfter(element);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          editor.appendChild(element);
+        }
+      }
+      
+      // Copy MDX button
+      copyMdxBtn.addEventListener('click', () => {
+        mdxOutput.select();
+        document.execCommand('copy');
+        alert('MDX copied to clipboard!');
+      });
+      
+      // Monitor editor changes
+      editor.addEventListener('input', updateMdxOutput);
+      editor.addEventListener('keyup', updateMdxOutput);
+      editor.addEventListener('click', updateMdxOutput);
+      
+      // Update MDX output
+      function updateMdxOutput() {
+        const html = editor.innerHTML;
+        const mdx = convertHtmlToMdx(html);
+        mdxOutput.value = mdx;
+      }
+      
+      // Convert HTML to MDX
+      function convertHtmlToMdx(html) {
+        // Create a temporary div to work with the HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        
+        // Process JSX components (keep them as is)
+        const jsxComponents = temp.querySelectorAll('.jsx-component');
+        jsxComponents.forEach(component => {
+          // Create a placeholder that we'll replace later
+          const placeholder = `__JSX_COMPONENT_${Math.random().toString(36).substring(2, 11)}__`;
+          component.dataset.placeholder = placeholder;
+        });
+        
+        // Get the current HTML
+        let mdx = temp.innerHTML;
+        
+        // Replace images with proper MDX format
+        mdx = mdx.replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>/g, '![$2]($1)');
+        // Fix the template string variables if they weren't properly replaced
+        mdx = mdx.replace(/!\$\{([^}]*)\}\(\$\{([^}]*)\}\)/g, '![$1]($2)');
+        
+        // Replace headings
+        mdx = mdx.replace(/<h1[^>]*>(.*?)<\/h1>/g, '# $1\n\n');
+        mdx = mdx.replace(/<h2[^>]*>(.*?)<\/h2>/g, '## $1\n\n');
+        mdx = mdx.replace(/<h3[^>]*>(.*?)<\/h3>/g, '### $1\n\n');
+        mdx = mdx.replace(/<h4[^>]*>(.*?)<\/h4>/g, '#### $1\n\n');
+        mdx = mdx.replace(/<h5[^>]*>(.*?)<\/h5>/g, '##### $1\n\n');
+        mdx = mdx.replace(/<h6[^>]*>(.*?)<\/h6>/g, '###### $1\n\n');
+        
+        // Replace paragraphs
+        mdx = mdx.replace(/<p[^>]*>(.*?)<\/p>/g, '$1\n\n');
+        
+        // Replace emphasis
+        mdx = mdx.replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**');
+        mdx = mdx.replace(/<b[^>]*>(.*?)<\/b>/g, '**$1**');
+        mdx = mdx.replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*');
+        mdx = mdx.replace(/<i[^>]*>(.*?)<\/i>/g, '*$1*');
+        mdx = mdx.replace(/<s[^>]*>(.*?)<\/s>/g, '~~$1~~');
+        mdx = mdx.replace(/<strike[^>]*>(.*?)<\/strike>/g, '~~$1~~');
+        mdx = mdx.replace(/<del[^>]*>(.*?)<\/del>/g, '~~$1~~');
+        
+        // Replace code
+        mdx = mdx.replace(/<code[^>]*>(.*?)<\/code>/g, '`$1`');
+        
+        // Replace pre (code blocks)
+        mdx = mdx.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/g, '```\n$1\n```\n\n');
+        
+        // Replace blockquotes
+        mdx = mdx.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/g, function(match, content) {
+          // Handle multi-line blockquotes
+          content = content.replace(/<p[^>]*>(.*?)<\/p>/g, '$1\n');
+          return content.split('\n').map(line => line.trim() ? `> ${line}` : '>').join('\n') + '\n\n';
+        });
+        
+        // Replace unordered lists
+        mdx = mdx.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/g, function(match, content) {
+          return content.replace(/<li[^>]*>(.*?)<\/li>/g, '- $1\n') + '\n';
+        });
+        
+        // Replace ordered lists
+        mdx = mdx.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/g, function(match, content) {
+          let index = 1;
+          return content.replace(/<li[^>]*>(.*?)<\/li>/g, function(match, item) {
+            return `${index++}. ${item}\n`;
+          }) + '\n';
+        });
+        
+        // Replace task lists
+        mdx = mdx.replace(/- \[ \] (.*?)(?:<br>|\n)/g, '- [ ] $1\n');
+        mdx = mdx.replace(/- \[x\] (.*?)(?:<br>|\n)/g, '- [x] $1\n');
+        
+        // Replace links
+        mdx = mdx.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, '[$2]($1)');
+        
+        // Replace horizontal rules
+        mdx = mdx.replace(/<hr[^>]*>/g, '---\n\n');
+        
+        // Handle details/summary (expandable sections)
+        mdx = mdx.replace(/<details[^>]*>[\s\S]*?<summary[^>]*>(.*?)<\/summary>([\s\S]*?)<\/details>/g, 
+          function(match, summary, content) {
+            return `<details>\n<summary>${summary}</summary>\n\n${content.trim()}\n</details>\n\n`;
+          }
+        );
+        
+        // Handle tables
+        mdx = mdx.replace(/<table[^>]*>([\s\S]*?)<\/table>/g, function(match, tableContent) {
+          let mdTable = '';
+          
+          // Extract header row
+          const headerMatch = tableContent.match(/<thead[^>]*>([\s\S]*?)<\/thead>/);
+          if (headerMatch) {
+            const headerCells = headerMatch[1].match(/<td[^>]*>(.*?)<\/td>/g) || [];
+            if (headerCells.length > 0) {
+              // Header row
+              mdTable += '| ' + headerCells.map(cell => 
+                cell.replace(/<td[^>]*>(.*?)<\/td>/, '$1').trim()
+              ).join(' | ') + ' |\n';
+              
+              // Separator row
+              mdTable += '| ' + headerCells.map(() => '---').join(' | ') + ' |\n';
+            }
+          }
+          
+          // Extract body rows
+          const bodyMatch = tableContent.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/);
+          if (bodyMatch) {
+            const rows = bodyMatch[1].match(/<tr[^>]*>([\s\S]*?)<\/tr>/g) || [];
+            rows.forEach(row => {
+              const cells = row.match(/<td[^>]*>(.*?)<\/td>/g) || [];
+              if (cells.length > 0) {
+                mdTable += '| ' + cells.map(cell => 
+                  cell.replace(/<td[^>]*>(.*?)<\/td>/, '$1').trim()
+                ).join(' | ') + ' |\n';
+              }
+            });
+          }
+          
+          return mdTable + '\n';
+        });
+        
+        // Clean up HTML entities
+        mdx = mdx.replace(/&lt;/g, '<');
+        mdx = mdx.replace(/&gt;/g, '>');
+        mdx = mdx.replace(/&amp;/g, '&');
+        mdx = mdx.replace(/&quot;/g, '"');
+        mdx = mdx.replace(/&#39;/g, "'");
+        
+        // Replace JSX component placeholders with actual content
+        jsxComponents.forEach(component => {
+          const placeholder = component.dataset.placeholder;
+          const regex = new RegExp(`<div[^>]*data-placeholder="${placeholder}"[^>]*>.*?<\/div>`, 'g');
+          mdx = mdx.replace(regex, '\n\n' + component.textContent + '\n\n');
+        });
+        
+        // Remove any remaining HTML tags
+        mdx = mdx.replace(/<(?!\/?(details|summary))[^>]*>/g, ''); // Keep details/summary tags
+        
+        // Clean up extra spaces and line breaks
+        mdx = mdx.replace(/\n\n\n+/g, '\n\n');
+        
+        return mdx.trim();
+      }
+    });
+  </script>
+</body>
+</html>
